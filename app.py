@@ -21,24 +21,31 @@ if 'dati_ddt' not in st.session_state:
 
 # --- CARICAMENTO ---
 st.write("### Carica il Documento")
-# Caricamento semplice e senza automatismi per non stressare il telefono
 uploaded_file = st.file_uploader("📂 Seleziona PDF o Foto", type=["pdf", "jpg", "jpeg", "png"])
 
 if uploaded_file:
-    st.info(f"📄 File '{uploaded_file.name}' in memoria. Premi il tasto per inviarlo.")
+    # Calcola il peso del file in Megabyte
+    peso_mb = uploaded_file.size / (1024 * 1024)
     
-    # PULSANTE MANUALE (Separa il caricamento dall'analisi)
+    st.info(f"📄 File '{uploaded_file.name}' in memoria (Peso: {peso_mb:.1f} MB).")
+    
     if st.button("🚀 ANALIZZA DOCUMENTO", type="primary"):
         with st.spinner('Lettura in corso... il telefono sta elaborando ⏳'):
             try:
                 if uploaded_file.name.lower().endswith('.pdf'):
-                    content = {"mime_type": "application/pdf", "data": uploaded_file.getvalue()}
+                    # LA BILANCIA SALVAVITA PER I TELEFONI
+                    if peso_mb > 2.5: # Se pesa più di 2.5 MB, il telefono rischia di bloccarsi
+                        st.error("⚠️ Questo PDF è troppo pesante per la memoria del browser del telefono!")
+                        st.warning("💡 TRUCCO: Apri il PDF sul cellulare, fai uno **Screenshot** alla pagina coi lotti, e carica lo screenshot come Foto!")
+                        st.stop() # Ferma tutto prima che il telefono si blocchi
+                    else:
+                        content = {"mime_type": "application/pdf", "data": uploaded_file.getvalue()}
                 else:
                     img = Image.open(uploaded_file)
-                    img.thumbnail((800, 800)) # Sgonfia la foto per il cellulare
+                    img.thumbnail((800, 800)) 
                     content = img
 
-                # IL TUO MODELLO VINCENTE (2.5)
+                # IL MODELLO VINCENTE (2.5)
                 model = genai.GenerativeModel('gemini-2.5-flash')
                 prompt = "Analizza questo DDT/Fattura e restituisci SOLO JSON: {fornitore, numero_ddt, data_ricezione, prodotti: [{nome, lotto}]}. Se non trovi il lotto scrivi N/D."
                 
