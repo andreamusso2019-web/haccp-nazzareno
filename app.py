@@ -26,21 +26,21 @@ if uploaded_file:
     # Creiamo un "documento di identità" per il file, così non lo legge due volte
     file_id = f"{uploaded_file.name}_{uploaded_file.size}"
     
-    # NOVITÀ: Nessun bottone! Se il file è nuovo, parte da solo.
+    # Nessun bottone! Se il file è nuovo, parte da solo.
     if st.session_state.get('ultimo_file') != file_id:
         st.session_state.dati_ddt = None # Pulisce i dati vecchi
         
         with st.spinner('Magia in corso... sto leggendo il documento ⏳'):
             try:
-                # Gestisce sia PDF che Foto
                 if uploaded_file.name.lower().endswith('.pdf'):
                     content = {"mime_type": "application/pdf", "data": uploaded_file.getvalue()}
                 else:
                     img = Image.open(uploaded_file)
-                    img.thumbnail((1200, 1200)) # Sgonfia la foto per non bloccare il telefono
+                    img.thumbnail((1200, 1200)) # Sgonfia la foto
                     content = img
 
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                # ECCO IL MODELLO CORRETTO CHE FUNZIONA DA TE!
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 prompt = "Analizza questo DDT e restituisci SOLO JSON: {fornitore, numero_ddt, data_ricezione, prodotti: [{nome, lotto}]}"
                 
                 response = model.generate_content(
@@ -48,12 +48,12 @@ if uploaded_file:
                     generation_config={"response_mime_type": "application/json"}
                 )
                 
-                # Salva i dati e ricorda che questo file è stato letto
                 st.session_state.dati_ddt = json.loads(response.text)
                 st.session_state.ultimo_file = file_id 
+                st.rerun() # Ricarica per far apparire i risultati subito
                 
             except Exception as e:
-                st.error(f"⚠️ Ricarica la pagina e riprova. Errore tecnico: {e}")
+                st.error(f"⚠️ Errore tecnico: {e}")
 
 # --- RISULTATI E ETICHETTA ---
 if st.session_state.dati_ddt:
