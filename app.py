@@ -5,13 +5,14 @@ from dateutil.relativedelta import relativedelta
 from PIL import Image
 import json
 
-# --- CONFIGURAZIONE ---
+# --- CONFIGURAZIONE SICURA ---
+# L'app ora legge la chiave solo dalla cassaforte invisibile di Streamlit
 try:
     API_KEY = st.secrets["GEMINI_KEY"]
-except:
-    API_KEY = "AIzaSyCFhXz8lht9koQFjXOyCdwEpfvJaLAqQ6A"
-
-genai.configure(api_key=API_KEY)
+    genai.configure(api_key=API_KEY)
+except Exception as e:
+    st.error("⚠️ Chiave API non trovata! Inseriscila nei Secrets di Streamlit.")
+    st.stop()
 
 st.set_page_config(page_title="HACCP Nazzareno", page_icon="🥖")
 st.title("🥖 HACCP Automatica")
@@ -23,12 +24,11 @@ if 'dati_ddt' not in st.session_state:
 uploaded_file = st.file_uploader("📸 Carica o Scatta Foto", type=["jpg", "jpeg", "png", "pdf"])
 
 if uploaded_file:
-    # Creiamo un "documento di identità" per il file, così non lo legge due volte
     file_id = f"{uploaded_file.name}_{uploaded_file.size}"
     
-    # Nessun bottone! Se il file è nuovo, parte da solo.
+    # Parte da solo appena carichi la foto
     if st.session_state.get('ultimo_file') != file_id:
-        st.session_state.dati_ddt = None # Pulisce i dati vecchi
+        st.session_state.dati_ddt = None 
         
         with st.spinner('Magia in corso... sto leggendo il documento ⏳'):
             try:
@@ -36,10 +36,10 @@ if uploaded_file:
                     content = {"mime_type": "application/pdf", "data": uploaded_file.getvalue()}
                 else:
                     img = Image.open(uploaded_file)
-                    img.thumbnail((1200, 1200)) # Sgonfia la foto
+                    img.thumbnail((1200, 1200)) 
                     content = img
 
-                # ECCO IL MODELLO CORRETTO CHE FUNZIONA DA TE!
+                # Il modello 2.5 super intelligente e funzionante
                 model = genai.GenerativeModel('gemini-2.5-flash')
                 prompt = "Analizza questo DDT e restituisci SOLO JSON: {fornitore, numero_ddt, data_ricezione, prodotti: [{nome, lotto}]}"
                 
@@ -50,7 +50,7 @@ if uploaded_file:
                 
                 st.session_state.dati_ddt = json.loads(response.text)
                 st.session_state.ultimo_file = file_id 
-                st.rerun() # Ricarica per far apparire i risultati subito
+                st.rerun() 
                 
             except Exception as e:
                 st.error(f"⚠️ Errore tecnico: {e}")
